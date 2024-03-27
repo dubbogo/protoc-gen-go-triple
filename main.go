@@ -29,14 +29,13 @@ import (
 
 import (
 	"google.golang.org/protobuf/compiler/protogen"
-
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/gen/generator"
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/internal/old_triple"
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/internal/version"
+	"github.com/dubbogo/protoc-gen-go-triple/gen/generator"
+	"github.com/dubbogo/protoc-gen-go-triple/internal/old_triple"
+	"github.com/dubbogo/protoc-gen-go-triple/internal/version"
 )
 
 const (

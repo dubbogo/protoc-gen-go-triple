@@ -24,7 +24,7 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/util"
+	"github.com/dubbogo/protoc-gen-go-triple/util"
 )
 
 var (

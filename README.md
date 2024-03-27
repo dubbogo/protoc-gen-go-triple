@@ -22,14 +22,14 @@ Before using `protoc-gen-go-triple`, make sure you have the following prerequisi
 To install `protoc-gen-go-triple`, you can use the `go get` command:
 
 ```shell
-go get dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple
+go get github.com/dubbogo/protoc-gen-go-triple
 ```
 
 Alternatively, you can clone the GitHub repository and build the binary manually:
 
 ```shell
-git clone https://github.com/apache/dubbo-go.git
-cd cmd/protoc-gen-go-triple
+git clone https://github.com/dubbogo/protoc-gen-go-triple.git
+cd protoc-gen-go-triple
 go build
 ```
 
@@ -47,6 +47,8 @@ Both the `--go_out` flag and `--go-triple_out` flag should be set to `.`. Please
 
 ## Example
 
+More dubbo examples using this protoc plugin can be found here [apache/dubbo-go-samples](https://github.com/apache/dubbo-go-samples/)
+
 Let's say you have a Protocol Buffer file named `greet.proto`, and you want to generate Triple Go code from it.
 
 ```proto
@@ -55,7 +57,7 @@ syntax = "proto3";
 package greet;
 
 
-option go_package = "dubbo.apache.org/dubbo-go/v3/protocol/triple/internal/proto/dubbo3_gen;greet";
+option go_package = "github.com/apache/dubbo-go-samples/helloworld/proto;greet";
 
 message GreetRequest {
   string name = 1;
@@ -83,10 +85,10 @@ Both parts are indispensable. The directory for the file is determined before `;
 Resulting in the following directory structure:
 
 ```
-dubbo-go/protocol/triple/internal/proto/
-|-triple_gen
-		greet.pb.go
-		greet.triple.go
+github.com/apache/dubbo-go-samples/helloworld
+|-proto
+    greet.pb.go
+    greet.triple.go
 ```
 
 The package for `greet.pb.go` and `greet.triple.go` are `greet`
