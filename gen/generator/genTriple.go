@@ -29,7 +29,7 @@ import (
 )
 
 import (
-	"github.com/dubbogo/protoc-gen-go-triple/util"
+	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/util"
 )
 
 func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
