@@ -1,4 +1,4 @@
-module dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple
+module github.com/dubbogo/protoc-gen-go-triple/v3
 
 go 1.20
 
