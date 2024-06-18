@@ -22,7 +22,7 @@ Before using `protoc-gen-go-triple`, make sure you have the following prerequisi
 To install `protoc-gen-go-triple`, you can use the `go get` command:
 
 ```shell
-go get dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple
+go get github.com/dubbogo/protoc-gen-go-triple/v3
 ```
 
 Alternatively, you can clone the GitHub repository and build the binary manually:

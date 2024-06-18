@@ -34,9 +34,9 @@ import (
 )
 
 import (
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/gen/generator"
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/internal/old_triple"
-	"dubbo.apache.org/dubbo-go/v3/cmd/protoc-gen-go-triple/internal/version"
+	"github.com/dubbogo/protoc-gen-go-triple/v3/gen/generator"
+	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/old_triple"
+	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/version"
 )
 
 const (
