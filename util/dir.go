@@ -18,13 +18,26 @@
 package util
 
 import (
+	"path/filepath"
 	"strings"
 )
 
 func GetModuleDir() (string, error) {
-	output, err := Exec("go list -m -f '{{.Dir}}'", "./")
-	if err != nil {
-		output, err = Exec("go list -m -f '{{.Module.Dir}}'", "./")
+	var (
+		output string
+		err    error
+	)
+	if IsVersionGreaterThan118() {
+		output, err = Exec("go env GOMOD", "./")
+		if err != nil {
+			return "", err
+		}
+		output = filepath.Dir(output)
+	} else {
+		output, err = Exec("go list -m -f '{{.Dir}}'", "./")
+		if err != nil {
+			output, err = Exec("go list -m -f '{{.Module.Dir}}'", "./")
+		}
 	}
 
 	if err != nil {
