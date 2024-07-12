@@ -19,6 +19,7 @@ package generator
 
 import (
 	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
+	"google.golang.org/protobuf/compiler/protogen"
 	"os"
 	"path/filepath"
 	"strings"
@@ -102,18 +103,15 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 	return tripleGo, nil
 }
 
-func GenTripleFile(triple TripleGo) error {
-	moduleDir, err := util.GetModuleDir()
-	if err != nil {
-		return err
-	}
-	GoOut := filepath.Join(moduleDir, filepath.Join(triple.Path, triple.FileName+".triple.go"))
+func GenTripleFile(genFile *protogen.GeneratedFile, triple TripleGo) error {
 	g := &Generator{}
 	data, err := g.parseTripleToString(triple)
 	if err != nil {
 		return err
 	}
-	return g.generateToFile(GoOut, []byte(data))
+
+	_, err = genFile.Write([]byte(data))
+	return err
 }
 
 type TripleGo struct {

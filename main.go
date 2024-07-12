@@ -76,13 +76,16 @@ func main() {
 
 func genTriple(plugin *protogen.Plugin) error {
 	for _, file := range plugin.Files {
-		if file.Generate {
-			tripleGo, err := generator.ProcessProtoFile(file.Proto)
-			if err != nil {
-				return err
-			}
-			return generator.GenTripleFile(tripleGo)
+		if !file.Generate {
+			continue
 		}
+		tripleGo, err := generator.ProcessProtoFile(file.Proto)
+		if err != nil {
+			return err
+		}
+		filename := file.GeneratedFilenamePrefix + ".triple.go"
+		g := plugin.NewGeneratedFile(filename, file.GoImportPath)
+		return generator.GenTripleFile(g, tripleGo)
 	}
 	return nil
 }
