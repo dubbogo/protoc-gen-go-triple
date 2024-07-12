@@ -18,6 +18,7 @@
 package generator
 
 import (
+	"errors"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
 	"google.golang.org/protobuf/compiler/protogen"
 	"os"
@@ -27,7 +28,6 @@ import (
 
 import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/pkg/errors"
 )
 
 func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
@@ -82,22 +82,20 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 			Methods:     serviceMethods,
 		})
 	}
+	var goPkg string
 	pkgs := strings.Split(file.Options.GetGoPackage(), ";")
-	if len(pkgs) < 2 || pkgs[1] == "" {
+	switch len(pkgs) {
+	case 2:
+		tripleGo.Package = pkgs[1]
+		goPkg = pkgs[0]
+	case 1:
+		tripleGo.Package = file.GetPackage()
+		goPkg = file.GetPackage()
+	default:
 		return tripleGo, errors.New("need to set the package name in go_package")
 	}
-	tripleGo.Package = pkgs[1]
-	goPkg := pkgs[0]
-	goPkg = strings.Trim(goPkg, "/")
-	moduleName, err := util.GetModuleName()
-	if err != nil {
-		return tripleGo, err
-	}
-	if strings.Contains(goPkg, moduleName) {
-		tripleGo.Path = strings.TrimPrefix(goPkg, moduleName)
-	} else {
-		tripleGo.Path = goPkg
-	}
+
+	goPkg = strings.ReplaceAll(goPkg, "/", "_")
 	_, fileName := filepath.Split(file.GetName())
 	tripleGo.FileName = strings.Split(fileName, ".")[0]
 	return tripleGo, nil
@@ -117,7 +115,6 @@ func GenTripleFile(genFile *protogen.GeneratedFile, triple TripleGo) error {
 type TripleGo struct {
 	Source       string
 	Package      string
-	Path         string
 	FileName     string
 	ProtoPackage string
 	Services     []Service
