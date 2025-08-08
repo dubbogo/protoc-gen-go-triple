@@ -22,10 +22,19 @@ for dir in ./test/correctly/*/; do
 
     dir_name=$(basename "$dir")
 
-    protoc --go_out=. --go_opt=paths=source_relative --plugin=protoc-gen-go-triple=../../../protoc-gen-go-triple --go-triple_out=. ./proto/greet.proto
+    if [ "$dir_name" = "import_nested" ]; then
+        echo "Testing import functionality in $dir_name..."
+        protoc -I=proto --go_out=proto --go_opt=paths=source_relative --plugin=protoc-gen-go-triple=../../../protoc-gen-go-triple --go-triple_out=proto --go-triple_opt=paths=source_relative proto/greet/v1/greet.proto proto/greet/v1/common/common.proto
+    else
+        protoc --go_out=. --go_opt=paths=source_relative --plugin=protoc-gen-go-triple=../../../protoc-gen-go-triple --go-triple_out=. ./proto/greet.proto
+    fi
     go mod tidy
 
-    go vet ./proto/*.go
+    if [ "$dir_name" = "import_nested" ]; then
+        cd proto && go vet ./...
+    else
+        go vet ./proto/*.go
+    fi
     result=$?
 
     if [ $result -ne 0 ]; then

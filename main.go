@@ -25,18 +25,19 @@ import (
 	"flag"
 	"fmt"
 	"os"
-)
-
-import (
-	"google.golang.org/protobuf/compiler/protogen"
-
-	"google.golang.org/protobuf/types/pluginpb"
+	"strings"
 )
 
 import (
 	"github.com/dubbogo/protoc-gen-go-triple/v3/gen/generator"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/old_triple"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/version"
+)
+
+import (
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 const (
@@ -75,17 +76,41 @@ func main() {
 }
 
 func genTriple(plugin *protogen.Plugin) error {
+	var errors []error
+
+	allFiles := make([]*descriptor.FileDescriptorProto, 0, len(plugin.Files))
+	for _, file := range plugin.Files {
+		allFiles = append(allFiles, file.Proto)
+	}
+
 	for _, file := range plugin.Files {
 		if !file.Generate {
 			continue
 		}
-		tripleGo, err := generator.ProcessProtoFile(file.Proto)
+		tripleGo, err := generator.ProcessProtoFile(file.Proto, allFiles)
 		if err != nil {
-			return err
+			errors = append(errors, fmt.Errorf("processing %s: %w", file.Desc.Path(), err))
+			continue
 		}
 		filename := file.GeneratedFilenamePrefix + ".triple.go"
-		g := plugin.NewGeneratedFile(filename, file.GoImportPath)
-		return generator.GenTripleFile(g, tripleGo)
+		// Use the same import path as the pb.go file to ensure they're in the same package
+		// Extract the package name from the go_package option
+		goPackage := file.Proto.Options.GetGoPackage()
+		var importPath protogen.GoImportPath
+		if goPackage != "" {
+			parts := strings.Split(goPackage, ";")
+			importPath = protogen.GoImportPath(parts[0])
+		} else {
+			importPath = file.GoImportPath
+		}
+		g := plugin.NewGeneratedFile(filename, importPath)
+		err = generator.GenTripleFile(g, tripleGo)
+		if err != nil {
+			errors = append(errors, fmt.Errorf("generating %s: %w", filename, err))
+		}
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf("multiple errors occurred: %v", errors)
 	}
 	return nil
 }

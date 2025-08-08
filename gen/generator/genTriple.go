@@ -19,16 +19,68 @@ package generator
 
 import (
 	"errors"
-	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
-	"google.golang.org/protobuf/compiler/protogen"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 import (
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
 )
+
+import (
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"google.golang.org/protobuf/compiler/protogen"
+)
+
+func processTypeWithImport(typeName string, file *descriptor.FileDescriptorProto, imports *[]string, allFiles []*descriptor.FileDescriptorProto) string {
+	typeName = strings.TrimPrefix(typeName, ".") // Remove the leading dot
+
+	parts := strings.Split(typeName, ".")
+	if len(parts) > 1 {
+		importedPackage := parts[0]
+		typeName := parts[1]
+
+		for _, dep := range file.GetDependency() {
+			depFileName := filepath.Base(dep)
+			if depFileName == importedPackage+".proto" {
+				importPath := findImportPathFromDependency(dep, allFiles)
+				found := false
+				for _, imp := range *imports {
+					if imp == importPath {
+						found = true
+						break
+					}
+				}
+				if !found {
+					*imports = append(*imports, importPath)
+				}
+
+				// Generate alias to avoid package name conflicts
+				alias := strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
+				return alias + "." + typeName
+			}
+		}
+	}
+	// For local types, use the original logic
+	return util.ToUpper(parts[len(parts)-1])
+}
+
+func findImportPathFromDependency(depPath string, allFiles []*descriptor.FileDescriptorProto) string {
+	for _, depFile := range allFiles {
+		if depFile.GetName() == depPath {
+			goPackage := depFile.Options.GetGoPackage()
+			if goPackage != "" {
+				parts := strings.Split(goPackage, ";")
+				if len(parts) >= 1 {
+					return parts[0]
+				}
+			}
+			return strings.TrimSuffix(depPath, ".proto")
+		}
+	}
+	return strings.TrimSuffix(depPath, ".proto")
+}
 
 func (g *Generator) parseTripleToString(t TripleGo) (string, error) {
 	var builder strings.Builder
@@ -55,11 +107,12 @@ func (g *Generator) generateToFile(filePath string, data []byte) error {
 	return util.GoFmtFile(filePath)
 }
 
-func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
+func ProcessProtoFile(file *descriptor.FileDescriptorProto, allFiles []*descriptor.FileDescriptorProto) (TripleGo, error) {
 	tripleGo := TripleGo{
 		Source:       file.GetName(),
 		ProtoPackage: file.GetPackage(),
 		Services:     make([]Service, 0),
+		Imports:      make([]string, 0), // Added to collect imports
 	}
 	for _, service := range file.GetService() {
 		serviceMethods := make([]Method, 0)
@@ -67,9 +120,9 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto) (TripleGo, error) {
 		for _, method := range service.GetMethod() {
 			serviceMethods = append(serviceMethods, Method{
 				MethodName:     method.GetName(),
-				RequestType:    util.ToUpper(strings.Split(method.GetInputType(), ".")[len(strings.Split(method.GetInputType(), "."))-1]),
+				RequestType:    processTypeWithImport(method.GetInputType(), file, &tripleGo.Imports, allFiles), // Modified call
 				StreamsRequest: method.GetClientStreaming(),
-				ReturnType:     util.ToUpper(strings.Split(method.GetOutputType(), ".")[len(strings.Split(method.GetOutputType(), "."))-1]),
+				ReturnType:     processTypeWithImport(method.GetOutputType(), file, &tripleGo.Imports, allFiles), // Modified call
 				StreamsReturn:  method.GetServerStreaming(),
 			})
 			if method.GetClientStreaming() || method.GetServerStreaming() {
@@ -119,6 +172,7 @@ type TripleGo struct {
 	ProtoPackage string
 	Services     []Service
 	IsStream     bool
+	Imports      []string
 }
 
 type Service struct {
