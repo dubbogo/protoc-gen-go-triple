@@ -120,9 +120,9 @@ func ProcessProtoFile(file *descriptor.FileDescriptorProto, allFiles []*descript
 		for _, method := range service.GetMethod() {
 			serviceMethods = append(serviceMethods, Method{
 				MethodName:     method.GetName(),
-				RequestType:    processTypeWithImport(method.GetInputType(), file, &tripleGo.Imports, allFiles), // Modified call
+				RequestType:    processTypeWithImport(method.GetInputType(), file, &tripleGo.Imports, allFiles),
 				StreamsRequest: method.GetClientStreaming(),
-				ReturnType:     processTypeWithImport(method.GetOutputType(), file, &tripleGo.Imports, allFiles), // Modified call
+				ReturnType:     processTypeWithImport(method.GetOutputType(), file, &tripleGo.Imports, allFiles),
 				StreamsReturn:  method.GetServerStreaming(),
 			})
 			if method.GetClientStreaming() || method.GetServerStreaming() {
