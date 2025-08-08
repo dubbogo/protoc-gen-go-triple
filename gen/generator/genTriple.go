@@ -29,11 +29,11 @@ import (
 )
 
 import (
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func processTypeWithImport(typeName string, file *descriptor.FileDescriptorProto, imports *[]string, allFiles []*descriptor.FileDescriptorProto) string {
+func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorProto, imports *[]string, allFiles []*descriptorpb.FileDescriptorProto) string {
 	typeName = strings.TrimPrefix(typeName, ".") // Remove the leading dot
 
 	parts := strings.Split(typeName, ".")
@@ -42,23 +42,25 @@ func processTypeWithImport(typeName string, file *descriptor.FileDescriptorProto
 		typeName := parts[1]
 
 		for _, dep := range file.GetDependency() {
-			depFileName := filepath.Base(dep)
-			if depFileName == importedPackage+".proto" {
-				importPath := findImportPathFromDependency(dep, allFiles)
-				found := false
-				for _, imp := range *imports {
-					if imp == importPath {
-						found = true
-						break
+			// Find the dependency file by matching its package name
+			for _, depFile := range allFiles {
+				if depFile.GetName() == dep && depFile.GetPackage() == importedPackage {
+					importPath := findImportPathFromDependency(dep, allFiles)
+					found := false
+					for _, imp := range *imports {
+						if imp == importPath {
+							found = true
+							break
+						}
 					}
-				}
-				if !found {
-					*imports = append(*imports, importPath)
-				}
+					if !found {
+						*imports = append(*imports, importPath)
+					}
 
-				// Generate alias to avoid package name conflicts
-				alias := strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
-				return alias + "." + typeName
+					// Generate alias to avoid package name conflicts
+					alias := strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
+					return alias + "." + typeName
+				}
 			}
 		}
 	}
@@ -66,7 +68,7 @@ func processTypeWithImport(typeName string, file *descriptor.FileDescriptorProto
 	return util.ToUpper(parts[len(parts)-1])
 }
 
-func findImportPathFromDependency(depPath string, allFiles []*descriptor.FileDescriptorProto) string {
+func findImportPathFromDependency(depPath string, allFiles []*descriptorpb.FileDescriptorProto) string {
 	for _, depFile := range allFiles {
 		if depFile.GetName() == depPath {
 			goPackage := depFile.Options.GetGoPackage()
@@ -107,7 +109,7 @@ func (g *Generator) generateToFile(filePath string, data []byte) error {
 	return util.GoFmtFile(filePath)
 }
 
-func ProcessProtoFile(file *descriptor.FileDescriptorProto, allFiles []*descriptor.FileDescriptorProto) (TripleGo, error) {
+func ProcessProtoFile(file *descriptorpb.FileDescriptorProto, allFiles []*descriptorpb.FileDescriptorProto) (TripleGo, error) {
 	tripleGo := TripleGo{
 		Source:       file.GetName(),
 		ProtoPackage: file.GetPackage(),

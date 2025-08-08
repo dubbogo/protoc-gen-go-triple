@@ -35,8 +35,8 @@ import (
 )
 
 import (
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
@@ -78,15 +78,16 @@ func main() {
 func genTriple(plugin *protogen.Plugin) error {
 	var errors []error
 
-	allFiles := make([]*descriptor.FileDescriptorProto, 0, len(plugin.Files))
+	allFiles := make([]*descriptorpb.FileDescriptorProto, 0, len(plugin.Files))
 	for _, file := range plugin.Files {
 		allFiles = append(allFiles, file.Proto)
 	}
 
 	for _, file := range plugin.Files {
-		if !file.Generate {
+		if !file.Generate || len(file.Proto.GetService()) == 0 {
 			continue
 		}
+
 		tripleGo, err := generator.ProcessProtoFile(file.Proto, allFiles)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("processing %s: %w", file.Desc.Path(), err))
