@@ -39,7 +39,7 @@ func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorPro
 	parts := strings.Split(typeName, ".")
 	if len(parts) > 1 {
 		importedPackage := parts[0]
-		typeName := parts[1]
+		localTypeName := parts[1]
 
 		for _, dep := range file.GetDependency() {
 			// Find the dependency file by matching its package name
@@ -59,7 +59,7 @@ func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorPro
 
 					// Generate alias to avoid package name conflicts
 					alias := strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
-					return alias + "." + typeName
+					return alias + "." + localTypeName
 				}
 			}
 		}
