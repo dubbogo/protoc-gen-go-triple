@@ -26,15 +26,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
-)
 
-import (
 	"github.com/dubbogo/protoc-gen-go-triple/v3/gen/generator"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/old_triple"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/version"
-)
-
-import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -111,7 +106,11 @@ func genTriple(plugin *protogen.Plugin) error {
 		}
 	}
 	if len(errors) > 0 {
-		return fmt.Errorf("multiple errors occurred: %v", errors)
+		var errorMessages []string
+		for _, err := range errors {
+			errorMessages = append(errorMessages, err.Error())
+		}
+		return fmt.Errorf("multiple errors occurred:\n%s", strings.Join(errorMessages, "\n"))
 	}
 	return nil
 }
