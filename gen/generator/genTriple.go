@@ -33,6 +33,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+// processTypeWithImport processes protobuf type names, handling imported types by creating aliases and collecting import paths
 func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorProto, imports *[]string, allFiles []*descriptorpb.FileDescriptorProto) string {
 	typeName = strings.TrimPrefix(typeName, ".") // Remove the leading dot
 
@@ -68,6 +69,7 @@ func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorPro
 	return util.ToUpper(parts[len(parts)-1])
 }
 
+// findImportPathFromDependency extracts the Go import path from a dependency file's go_package option
 func findImportPathFromDependency(depPath string, allFiles []*descriptorpb.FileDescriptorProto) string {
 	for _, depFile := range allFiles {
 		if depFile.GetName() == depPath {
