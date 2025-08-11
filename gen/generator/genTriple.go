@@ -39,12 +39,34 @@ func generateAlias(importPath string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
 }
 
+// buildPackageLookupMap creates a map for efficient package name to file lookup
+func buildPackageLookupMap(allFiles []*descriptorpb.FileDescriptorProto) map[string]*descriptorpb.FileDescriptorProto {
+	lookupMap := make(map[string]*descriptorpb.FileDescriptorProto)
+	for _, file := range allFiles {
+		lookupMap[file.GetPackage()] = file
+	}
+	return lookupMap
+}
+
+// buildDependencyLookupMap creates a map for efficient dependency path to file lookup
+func buildDependencyLookupMap(allFiles []*descriptorpb.FileDescriptorProto) map[string]*descriptorpb.FileDescriptorProto {
+	lookupMap := make(map[string]*descriptorpb.FileDescriptorProto)
+	for _, file := range allFiles {
+		lookupMap[file.GetName()] = file
+	}
+	return lookupMap
+}
+
 // processTypeWithImport processes protobuf type names, handling imported types by creating aliases and collecting import paths
 func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorProto, imports *[]string, allFiles []*descriptorpb.FileDescriptorProto) string {
 	typeName = strings.TrimPrefix(typeName, ".") // Remove the leading dot
 
 	parts := strings.Split(typeName, ".")
 	if len(parts) > 1 {
+		// Build lookup maps for efficient searching
+		packageLookup := buildPackageLookupMap(allFiles)
+		dependencyLookup := buildDependencyLookupMap(allFiles)
+
 		// Try to find the longest matching package name
 		for i := len(parts) - 1; i > 0; i-- {
 			importedPackage := strings.Join(parts[:i], ".")
@@ -56,11 +78,12 @@ func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorPro
 				return util.ToUpper(localTypeName)
 			}
 
-			for _, dep := range file.GetDependency() {
-				// Find the dependency file by matching its package name
-				for _, depFile := range allFiles {
-					if depFile.GetName() == dep && depFile.GetPackage() == importedPackage {
-						importPath := findImportPathFromDependency(dep, allFiles)
+			// Check if the package exists in our lookup map
+			if depFile, exists := packageLookup[importedPackage]; exists {
+				// Verify this package is actually a dependency of the current file
+				for _, dep := range file.GetDependency() {
+					if depFile.GetName() == dep {
+						importPath := findImportPathFromDependency(dep, dependencyLookup)
 						found := false
 						for _, imp := range *imports {
 							if imp == importPath {
@@ -85,18 +108,16 @@ func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorPro
 }
 
 // findImportPathFromDependency extracts the Go import path from a dependency file's go_package option
-func findImportPathFromDependency(depPath string, allFiles []*descriptorpb.FileDescriptorProto) string {
-	for _, depFile := range allFiles {
-		if depFile.GetName() == depPath {
-			goPackage := depFile.Options.GetGoPackage()
-			if goPackage != "" {
-				parts := strings.Split(goPackage, ";")
-				if len(parts) >= 1 {
-					return parts[0]
-				}
+func findImportPathFromDependency(depPath string, dependencyLookup map[string]*descriptorpb.FileDescriptorProto) string {
+	if depFile, exists := dependencyLookup[depPath]; exists {
+		goPackage := depFile.Options.GetGoPackage()
+		if goPackage != "" {
+			parts := strings.Split(goPackage, ";")
+			if len(parts) >= 1 {
+				return parts[0]
 			}
-			return strings.TrimSuffix(depPath, ".proto")
 		}
+		return strings.TrimSuffix(depPath, ".proto")
 	}
 	return strings.TrimSuffix(depPath, ".proto")
 }
