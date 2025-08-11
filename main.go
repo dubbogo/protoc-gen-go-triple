@@ -84,7 +84,13 @@ func genTriple(plugin *protogen.Plugin) error {
 	}
 
 	for _, file := range plugin.Files {
-		if !file.Generate || len(file.Proto.GetService()) == 0 {
+		// Skip files that are not marked for generation
+		if !file.Generate {
+			continue
+		}
+
+		// Skip files that don't contain any service definitions
+		if len(file.Proto.GetService()) == 0 {
 			continue
 		}
 

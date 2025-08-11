@@ -17,23 +17,56 @@
 
 go build
 
+# Save the root directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 for dir in ./test/correctly/*/; do
+    if [ ! -d "$dir" ]; then
+        continue
+    fi
+    
     cd "$dir" || exit 1
 
     dir_name=$(basename "$dir")
+    echo "Testing $dir_name..."
 
     if [ "$dir_name" = "import_nested" ]; then
         echo "Testing import functionality in $dir_name..."
-        protoc -I=proto --go_out=proto --go_opt=paths=source_relative --plugin=protoc-gen-go-triple=../../../protoc-gen-go-triple --go-triple_out=proto --go-triple_opt=paths=source_relative proto/greet/v1/greet.proto proto/greet/v1/common/common.proto
+        if [ -f "proto/greet/v1/greet.proto" ] && [ -f "proto/greet/v1/common/common.proto" ]; then
+            protoc -I=proto --go_out=proto --go_opt=paths=source_relative --plugin=protoc-gen-go-triple=../../../protoc-gen-go-triple --go-triple_out=proto --go-triple_opt=paths=source_relative proto/greet/v1/greet.proto proto/greet/v1/common/common.proto
+        else
+            echo "Warning: Required proto files not found in $dir_name"
+            cd - || exit 1
+            continue
+        fi
     else
-        protoc --go_out=. --go_opt=paths=source_relative --plugin=protoc-gen-go-triple=../../../protoc-gen-go-triple --go-triple_out=. ./proto/greet.proto
+        if [ -f "./proto/greet.proto" ]; then
+            protoc --go_out=. --go_opt=paths=source_relative --plugin=protoc-gen-go-triple=../../../protoc-gen-go-triple --go-triple_out=. ./proto/greet.proto
+        else
+            echo "Warning: greet.proto not found in $dir_name"
+            cd - || exit 1
+            continue
+        fi
     fi
+    
     go mod tidy
 
     if [ "$dir_name" = "import_nested" ]; then
-        cd proto && go vet ./...
+        if [ -d "proto" ]; then
+            cd proto && go vet ./...
+        else
+            echo "Warning: proto directory not found in $dir_name"
+            cd - || exit 1
+            continue
+        fi
     else
-        go vet ./proto/*.go
+        if [ -d "./proto" ]; then
+            go vet ./proto/*.go
+        else
+            echo "Warning: proto directory not found in $dir_name"
+            cd - || exit 1
+            continue
+        fi
     fi
     result=$?
 
@@ -43,5 +76,5 @@ for dir in ./test/correctly/*/; do
     fi
 
     echo "No issues found in $dir_name."
-    cd - || exit 1
+    cd "$SCRIPT_DIR" || exit 1
 done

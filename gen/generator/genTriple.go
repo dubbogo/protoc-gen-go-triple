@@ -33,34 +33,49 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+// generateAlias creates an alias for import paths to avoid package name conflicts
+// by replacing "/" and "." with "_"
+func generateAlias(importPath string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
+}
+
 // processTypeWithImport processes protobuf type names, handling imported types by creating aliases and collecting import paths
 func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorProto, imports *[]string, allFiles []*descriptorpb.FileDescriptorProto) string {
 	typeName = strings.TrimPrefix(typeName, ".") // Remove the leading dot
 
 	parts := strings.Split(typeName, ".")
 	if len(parts) > 1 {
-		importedPackage := parts[0]
-		localTypeName := parts[1]
+		// Try to find the longest matching package name
+		for i := len(parts) - 1; i > 0; i-- {
+			importedPackage := strings.Join(parts[:i], ".")
+			localTypeName := parts[i]
 
-		for _, dep := range file.GetDependency() {
-			// Find the dependency file by matching its package name
-			for _, depFile := range allFiles {
-				if depFile.GetName() == dep && depFile.GetPackage() == importedPackage {
-					importPath := findImportPathFromDependency(dep, allFiles)
-					found := false
-					for _, imp := range *imports {
-						if imp == importPath {
-							found = true
-							break
+			// Check if the type is from the same package
+			if importedPackage == file.GetPackage() {
+				// Same package, return just the type name
+				return util.ToUpper(localTypeName)
+			}
+
+			for _, dep := range file.GetDependency() {
+				// Find the dependency file by matching its package name
+				for _, depFile := range allFiles {
+					if depFile.GetName() == dep && depFile.GetPackage() == importedPackage {
+						importPath := findImportPathFromDependency(dep, allFiles)
+						found := false
+						for _, imp := range *imports {
+							if imp == importPath {
+								found = true
+								break
+							}
 						}
-					}
-					if !found {
-						*imports = append(*imports, importPath)
-					}
+						if !found {
+							*imports = append(*imports, importPath)
+						}
 
-					// Generate alias to avoid package name conflicts
-					alias := strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
-					return alias + "." + localTypeName
+						// Generate alias to avoid package name conflicts
+						alias := generateAlias(importPath)
+						return alias + "." + localTypeName
+					}
 				}
 			}
 		}

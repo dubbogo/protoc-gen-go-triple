@@ -1,9 +1,9 @@
 syntax = "proto3";
-package common;
+package greet.v1.common;
 
 import "google/protobuf/struct.proto";
 
-option go_package = "import_nested/proto/greet/v1/common;common";
+option go_package = "import_nested/proto/greet/v1/common;commonv1";
 
 message CommonRequest {
   string message = 1;

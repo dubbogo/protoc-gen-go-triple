@@ -58,9 +58,7 @@ func init() {
 		log.Fatal(err)
 	}
 	TplImport, err = template.New("import").Funcs(template.FuncMap{
-		"alias": func(s string) string {
-			return strings.ReplaceAll(strings.ReplaceAll(s, "/", "_"), ".", "_")
-		},
+		"alias": generateAlias,
 	}).Parse(ImportTpl)
 	if err != nil {
 		log.Fatal(err)

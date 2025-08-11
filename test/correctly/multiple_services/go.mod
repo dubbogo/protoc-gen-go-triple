@@ -2,7 +2,6 @@ module multiple_service
 
 require (
 	dubbo.apache.org/dubbo-go/v3 v3.1.1-0.20240202021041-198504bb0029
-	github.com/golang/protobuf v1.5.4
 	google.golang.org/protobuf v1.33.0
 )
 
@@ -25,6 +24,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.12.0 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect

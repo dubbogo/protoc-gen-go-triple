@@ -1,22 +1,22 @@
 syntax = "proto3";
-package greet;
+package greet.v1;
 
 import "greet/v1/common/common.proto";
 
-option go_package = "import_nested/proto/greet/v1;greet";
+option go_package = "import_nested/proto/greet/v1;greetv1";
 
 message GreetRequest {
   string name = 1;
-  common.CommonRequest common_req = 2;
+  greet.v1.common.CommonRequest common_req = 2;
 }
 
 message GreetResponse {
   string greeting = 1;
-  common.CommonResponse common_resp = 2;
+  greet.v1.common.CommonResponse common_resp = 2;
 }
 
 service GreetService {
   rpc Greet(GreetRequest) returns (GreetResponse) {}
-  rpc GreetWithCommon(common.CommonRequest) returns (common.CommonResponse) {}
+  rpc GreetWithCommon(greet.v1.common.CommonRequest) returns (greet.v1.common.CommonResponse) {}
 }
 
