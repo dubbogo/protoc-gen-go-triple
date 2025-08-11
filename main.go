@@ -26,15 +26,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
-)
 
-import (
 	"github.com/dubbogo/protoc-gen-go-triple/v3/gen/generator"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/old_triple"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/version"
-)
-
-import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -99,6 +94,8 @@ func genTriple(plugin *protogen.Plugin) error {
 			errors = append(errors, fmt.Errorf("processing %s: %w", file.Desc.Path(), err))
 			continue
 		}
+		// Ensure the generated file uses the exact Go package name computed by protoc-gen-go.
+		tripleGo.Package = string(file.GoPackageName)
 		filename := file.GeneratedFilenamePrefix + ".triple.go"
 		// Use the same import path as the pb.go file to ensure they're in the same package
 		// Extract the package name from the go_package option
