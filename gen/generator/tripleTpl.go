@@ -57,9 +57,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	TplImport, err = template.New("import").Funcs(template.FuncMap{
-		"alias": generateAlias,
-	}).Parse(ImportTpl)
+	TplImport, err = template.New("import").Parse(ImportTpl)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -155,7 +153,7 @@ import (
 )
 
 {{if .Imports}}import (
-{{range .Imports}}	{{alias .}} "{{.}}"
+{{range .Imports}}	"{{.}}"
 {{end}})
 {{end}}
 

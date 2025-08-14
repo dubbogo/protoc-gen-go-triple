@@ -22,22 +22,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-)
 
-import (
 	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
-)
-
-import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
-
-// generateAlias creates an alias for import paths to avoid package name conflicts
-// by replacing "/" and "." with "_"
-func generateAlias(importPath string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
-}
 
 // buildPackageLookupMap creates a map for efficient package name to file lookup
 func buildPackageLookupMap(allFiles []*descriptorpb.FileDescriptorProto) map[string]*descriptorpb.FileDescriptorProto {
@@ -58,7 +47,7 @@ func buildDependencyLookupMap(allFiles []*descriptorpb.FileDescriptorProto) map[
 }
 
 // processTypeWithImport processes protobuf type names, handling imported types by creating aliases and collecting import paths
-func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorProto, imports *[]string, allFiles []*descriptorpb.FileDescriptorProto) string {
+func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorProto, imports *[]string, allFiles []*descriptorpb.FileDescriptorProto, existingAliases map[string]bool) string {
 	typeName = strings.TrimPrefix(typeName, ".") // Remove the leading dot
 
 	parts := strings.Split(typeName, ".")
@@ -95,9 +84,19 @@ func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorPro
 							*imports = append(*imports, importPath)
 						}
 
-						// Generate alias to avoid package name conflicts
-						alias := generateAlias(importPath)
-						return alias + "." + localTypeName
+						// Extract package name from go_package option for type reference
+						goPackage := depFile.Options.GetGoPackage()
+						if goPackage != "" {
+							parts := strings.Split(goPackage, ";")
+							if len(parts) >= 2 {
+								// Use the package name from go_package option
+								return parts[1] + "." + localTypeName
+							}
+						}
+						// Fallback: extract from import path
+						importPathParts := strings.Split(importPath, "/")
+						packageName := importPathParts[len(importPathParts)-1]
+						return packageName + "." + localTypeName
 					}
 				}
 			}
@@ -154,15 +153,18 @@ func ProcessProtoFile(file *descriptorpb.FileDescriptorProto, allFiles []*descri
 		Services:     make([]Service, 0),
 		Imports:      make([]string, 0), // Added to collect imports
 	}
+
+	// Track existing aliases to avoid conflicts
+	existingAliases := make(map[string]bool)
 	for _, service := range file.GetService() {
 		serviceMethods := make([]Method, 0)
 
 		for _, method := range service.GetMethod() {
 			serviceMethods = append(serviceMethods, Method{
 				MethodName:     method.GetName(),
-				RequestType:    processTypeWithImport(method.GetInputType(), file, &tripleGo.Imports, allFiles),
+				RequestType:    processTypeWithImport(method.GetInputType(), file, &tripleGo.Imports, allFiles, existingAliases),
 				StreamsRequest: method.GetClientStreaming(),
-				ReturnType:     processTypeWithImport(method.GetOutputType(), file, &tripleGo.Imports, allFiles),
+				ReturnType:     processTypeWithImport(method.GetOutputType(), file, &tripleGo.Imports, allFiles, existingAliases),
 				StreamsReturn:  method.GetServerStreaming(),
 			})
 			if method.GetClientStreaming() || method.GetServerStreaming() {
@@ -206,13 +208,14 @@ func GenTripleFile(genFile *protogen.GeneratedFile, triple TripleGo) error {
 }
 
 type TripleGo struct {
-	Source       string
-	Package      string
-	FileName     string
-	ProtoPackage string
-	Services     []Service
-	IsStream     bool
-	Imports      []string
+	Source        string
+	Package       string
+	FileName      string
+	ProtoPackage  string
+	Services      []Service
+	IsStream      bool
+	Imports       []string
+	ImportAliases map[string]string // Map of import path to alias
 }
 
 type Service struct {
