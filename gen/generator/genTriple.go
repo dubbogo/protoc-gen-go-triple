@@ -18,12 +18,17 @@
 package generator
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+)
 
+import (
 	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
+)
+
+import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -46,7 +51,7 @@ func buildDependencyLookupMap(allFiles []*descriptorpb.FileDescriptorProto) map[
 	return lookupMap
 }
 
-// processTypeWithImport processes protobuf type names, handling imported types by creating aliases and collecting import paths
+// processTypeWithImport processes protobuf type names, handling imported types and collecting import paths
 func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorProto, imports *[]string, allFiles []*descriptorpb.FileDescriptorProto, existingAliases map[string]bool) string {
 	typeName = strings.TrimPrefix(typeName, ".") // Remove the leading dot
 
@@ -84,7 +89,7 @@ func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorPro
 							*imports = append(*imports, importPath)
 						}
 
-						// Extract package name from go_package option for type reference
+						// Use package name from go_package option for consistent type references
 						goPackage := depFile.Options.GetGoPackage()
 						if goPackage != "" {
 							parts := strings.Split(goPackage, ";")
@@ -93,7 +98,7 @@ func processTypeWithImport(typeName string, file *descriptorpb.FileDescriptorPro
 								return parts[1] + "." + localTypeName
 							}
 						}
-						// Fallback: extract from import path
+						// Fallback: use the last part of import path
 						importPathParts := strings.Split(importPath, "/")
 						packageName := importPathParts[len(importPathParts)-1]
 						return packageName + "." + localTypeName
@@ -177,20 +182,8 @@ func ProcessProtoFile(file *descriptorpb.FileDescriptorProto, allFiles []*descri
 			Methods:     serviceMethods,
 		})
 	}
-	var goPkg string
-	pkgs := strings.Split(file.Options.GetGoPackage(), ";")
-	switch len(pkgs) {
-	case 2:
-		tripleGo.Package = pkgs[1]
-		goPkg = pkgs[0]
-	case 1:
-		tripleGo.Package = file.GetPackage()
-		goPkg = file.GetPackage()
-	default:
-		return tripleGo, errors.New("need to set the package name in go_package")
-	}
-
-	goPkg = strings.ReplaceAll(goPkg, "/", "_")
+	// Package name will be set by main.go using file.GoPackageName
+	// to ensure consistency with protoc-gen-go
 	_, fileName := filepath.Split(file.GetName())
 	tripleGo.FileName = strings.Split(fileName, ".")[0]
 	return tripleGo, nil
@@ -208,14 +201,13 @@ func GenTripleFile(genFile *protogen.GeneratedFile, triple TripleGo) error {
 }
 
 type TripleGo struct {
-	Source        string
-	Package       string
-	FileName      string
-	ProtoPackage  string
-	Services      []Service
-	IsStream      bool
-	Imports       []string
-	ImportAliases map[string]string // Map of import path to alias
+	Source       string
+	Package      string
+	FileName     string
+	ProtoPackage string
+	Services     []Service
+	IsStream     bool
+	Imports      []string
 }
 
 type Service struct {
@@ -229,4 +221,99 @@ type Method struct {
 	StreamsRequest bool
 	ReturnType     string
 	StreamsReturn  bool
+}
+
+// generateAlias creates a shorter, more readable alias for import paths to avoid package name conflicts
+// It tries to use meaningful parts of the import path and adds numbers when conflicts occur
+func generateAlias(importPath string, existingAliases map[string]bool) string {
+	// Split the import path into parts
+	parts := strings.Split(importPath, "/")
+
+	// Try different strategies to create a short, meaningful alias
+	candidates := []string{}
+
+	// Strategy 1: Use the last part (most common case)
+	if len(parts) > 0 {
+		lastPart := parts[len(parts)-1]
+		// Remove .proto extension if present
+		lastPart = strings.TrimSuffix(lastPart, ".proto")
+		candidates = append(candidates, lastPart)
+	}
+
+	// Strategy 2: Use the last two parts if they exist
+	if len(parts) >= 2 {
+		lastTwo := parts[len(parts)-2] + "_" + parts[len(parts)-1]
+		lastTwo = strings.TrimSuffix(lastTwo, ".proto")
+		candidates = append(candidates, lastTwo)
+	}
+
+	// Strategy 3: Use meaningful parts (skip common prefixes like "proto", "v1", etc.)
+	if len(parts) > 2 {
+		meaningfulParts := []string{}
+		for _, part := range parts {
+			// Skip common prefixes that don't add meaning
+			if part != "proto" && part != "v1" && part != "v2" && part != "v3" &&
+				part != "api" && part != "pkg" && part != "internal" && part != "external" {
+				meaningfulParts = append(meaningfulParts, part)
+			}
+		}
+		if len(meaningfulParts) > 0 {
+			meaningful := strings.Join(meaningfulParts, "_")
+			meaningful = strings.TrimSuffix(meaningful, ".proto")
+			candidates = append(candidates, meaningful)
+		}
+	}
+
+	// Strategy 4: Fallback to a shortened version of the full path
+	shortened := strings.ReplaceAll(strings.ReplaceAll(importPath, "/", "_"), ".", "_")
+	shortened = strings.TrimSuffix(shortened, ".proto")
+	// Limit length to avoid extremely long aliases
+	if len(shortened) > 30 {
+		shortened = shortened[:30]
+	}
+	candidates = append(candidates, shortened)
+
+	// Try each candidate, adding numbers if there are conflicts
+	for _, candidate := range candidates {
+		// Clean up the candidate (remove any invalid characters for Go identifiers)
+		candidate = strings.ReplaceAll(candidate, "-", "_")
+		candidate = strings.ReplaceAll(candidate, ".", "_")
+
+		// Ensure it starts with a letter or underscore
+		if len(candidate) > 0 && !((candidate[0] >= 'a' && candidate[0] <= 'z') ||
+			(candidate[0] >= 'A' && candidate[0] <= 'Z') || candidate[0] == '_') {
+			candidate = "pkg_" + candidate
+		}
+
+		// Try the candidate without number first
+		if !existingAliases[candidate] {
+			existingAliases[candidate] = true
+			return candidate
+		}
+
+		// If there's a conflict, try with numbers
+		for i := 1; i <= 999; i++ {
+			numberedCandidate := fmt.Sprintf("%s_%d", candidate, i)
+			if !existingAliases[numberedCandidate] {
+				existingAliases[numberedCandidate] = true
+				return numberedCandidate
+			}
+		}
+	}
+
+	// If all else fails, use a hash-based approach
+	hash := fmt.Sprintf("pkg_%x", importPath)
+	if len(hash) > 16 {
+		hash = hash[:16]
+	}
+
+	// Ensure uniqueness
+	counter := 1
+	finalHash := hash
+	for existingAliases[finalHash] {
+		finalHash = fmt.Sprintf("%s_%d", hash, counter)
+		counter++
+	}
+	existingAliases[finalHash] = true
+	return finalHash
 }
