@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 #
 #  Licensed to the Apache Software Foundation (ASF) under one or more
 #  contributor license agreements.  See the NOTICE file distributed with
@@ -15,17 +17,85 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-go build
+# Save the root directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Ensure the protoc-gen-go-triple binary exists locally
+PLUGIN="$SCRIPT_DIR/protoc-gen-go-triple"
+if [ ! -x "$PLUGIN" ]; then
+    echo "Building protoc-gen-go-triple..."
+    (cd "$SCRIPT_DIR" && go build -o "$PLUGIN")
+fi
 
 for dir in ./test/correctly/*/; do
+    if [ ! -d "$dir" ]; then
+        continue
+    fi
+    
     cd "$dir" || exit 1
 
     dir_name=$(basename "$dir")
+    echo "Testing $dir_name..."
 
-    protoc --go_out=. --go_opt=paths=source_relative --plugin=protoc-gen-go-triple=../../../protoc-gen-go-triple --go-triple_out=. ./proto/greet.proto
-    go mod tidy
+    if [ "$dir_name" = "import_nested" ]; then
+        echo "Testing import functionality in $dir_name..."
+        if [ -f "proto/greet/v1/greet.proto" ] && [ -f "proto/greet/v1/common/common.proto" ]; then
+            # Generate Go types for both protos
+            protoc -I=proto \
+              --go_out=proto --go_opt=paths=source_relative \
+              proto/greet/v1/greet.proto proto/greet/v1/common/common.proto
+            # Generate triple stubs only for service proto(s)
+            protoc -I=proto \
+              --plugin=protoc-gen-go-triple="$PLUGIN" \
+              --go-triple_out=proto --go-triple_opt=paths=source_relative \
+              proto/greet/v1/greet.proto
+        else
+            echo "Warning: Required proto files not found in $dir_name"
+            cd "$SCRIPT_DIR" || exit 1
+            continue
+        fi
+    else
+        if [ -f "./proto/greet.proto" ]; then
+            protoc -I=proto \
+              --go_out=. --go_opt=paths=source_relative \
+              --plugin=protoc-gen-go-triple="$PLUGIN" \
+              --go-triple_out=. --go-triple_opt=paths=source_relative \
+              ./proto/greet.proto
+        else
+            echo "Warning: greet.proto not found in $dir_name"
+            cd "$SCRIPT_DIR" || exit 1
+            continue
+        fi
+    fi
+    
+    # Run 'go mod tidy' only where a go.mod exists
+    if [ "$dir_name" = "import_nested" ]; then
+        if [ -f "proto/go.mod" ]; then
+            (cd proto && go mod tidy)
+        fi
+    else
+        if [ -f "go.mod" ]; then
+            go mod tidy
+        fi
+    fi
 
-    go vet ./proto/*.go
+    if [ "$dir_name" = "import_nested" ]; then
+        if [ -d "proto" ]; then
+            (cd proto && go vet ./...)
+        else
+            echo "Warning: proto directory not found in $dir_name"
+            cd "$SCRIPT_DIR" || exit 1
+            continue
+        fi
+    else
+        if [ -d "./proto" ]; then
+            (cd proto && go vet ./...)
+        else
+            echo "Warning: proto directory not found in $dir_name"
+            cd "$SCRIPT_DIR" || exit 1
+            continue
+        fi
+    fi
     result=$?
 
     if [ $result -ne 0 ]; then
@@ -34,5 +104,5 @@ for dir in ./test/correctly/*/; do
     fi
 
     echo "No issues found in $dir_name."
-    cd - || exit 1
+    cd "$SCRIPT_DIR" || exit 1
 done

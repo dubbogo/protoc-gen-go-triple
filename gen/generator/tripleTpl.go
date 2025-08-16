@@ -18,10 +18,13 @@
 package generator
 
 import (
-	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
 	"html/template"
 	"log"
 	"strings"
+)
+
+import (
+	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
 )
 
 var (
@@ -148,6 +151,11 @@ import (
 	"dubbo.apache.org/dubbo-go/v3/protocol/triple/triple_protocol"
 	"dubbo.apache.org/dubbo-go/v3/server"
 )
+
+{{if .Imports}}import (
+{{range .Imports}}	"{{.}}"
+{{end}})
+{{end}}
 
 `
 
