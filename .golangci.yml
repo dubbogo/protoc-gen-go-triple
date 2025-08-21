@@ -29,55 +29,57 @@ linters:
     - gocritic
     - lll
     - dupl
-  settings:
-    depguard:
-      rules:
-        main:
-          deny:
-            - pkg: github.com/sirupsen/logrus
-              desc: logging is allowed only by logutils.Log, logrus is allowed to use only in logutils package
-    dupl:
-      threshold: 100
-    goconst:
-      min-len: 2
-      min-occurrences: 2
-    gocritic:
-      disabled-checks:
-        - wrapperFunc
-      enabled-tags:
-        - performance
-        - style
-        - experimental
-    gocyclo:
-      min-complexity: 10
-    govet:
-      enable:
-        - shadow
-    lll:
-      line-length: 140
-    misspell:
-      locale: US
-      ignore-rules:
-        - nto
-  exclusions:
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
+    - depguard
+
+linters-settings:
+  depguard:
     rules:
-      - linters:
-          - gosec
-        text: weak cryptographic primitive
-      - linters:
-          - staticcheck
-        text: '(SA1019|ST1001):'
-    paths:
-      - test/**
-      - '**/*.pb.go'
-      - '**/*.triple.go'
-      - examples$
+      main:
+        deny:
+          - pkg: github.com/sirupsen/logrus
+            desc: logging is allowed only by logutils.Log, logrus is allowed to use only in logutils package
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  gocritic:
+    disabled-checks:
+      - wrapperFunc
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+  gocyclo:
+    min-complexity: 10
+  govet:
+    enable:
+      - shadow
+  lll:
+    line-length: 140
+  misspell:
+    locale: US
+    ignore-words:
+      - nto
+issues:
+  # Skip issues in generated files; set to false if you want to lint them.
+  exclude-generated: true
+  exclude-rules:
+    - linters:
+        - gosec
+      text: weak cryptographic primitive
+    - linters:
+        - staticcheck
+      text: '(SA1019|ST1001):'
+
+run:
+  skip-dirs:
+    - test
+    - examples
+  # skip-files uses regexes
+  skip-files:
+    - '.*\.pb\.go$'
+    - '.*\.triple\.go$'
 
 formatters:
   settings:
@@ -85,10 +87,3 @@ formatters:
     goimports:
       local-prefixes:
         - github.com/dubbogo/protoc-gen-go-triple
-  exclusions:
-    generated: lax
-    paths:
-      - test/**
-      - '**/*.pb.go'
-      - '**/*.triple.go'
-      - examples$
