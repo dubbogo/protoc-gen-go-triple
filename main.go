@@ -26,14 +26,18 @@ import (
 	"fmt"
 	"os"
 	"strings"
+)
 
-	"google.golang.org/protobuf/compiler/protogen"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/pluginpb"
-
+import (
 	"github.com/dubbogo/protoc-gen-go-triple/v3/gen/generator"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/old_triple"
 	"github.com/dubbogo/protoc-gen-go-triple/v3/internal/version"
+)
+
+import (
+	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 const (
