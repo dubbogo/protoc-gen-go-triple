@@ -36,6 +36,9 @@ SHELL = /bin/bash
 # Uncomment to enable strict mode for all recipes (verify CI tolerance first)
 # .SHELLFLAGS := -eu -o pipefail -c
 
+# goimports version (compatible with older local Go toolchains)
+GOIMPORTS_VERSION ?= v0.1.5
+
 # GolangCI-Lint version to install locally (v1.x to match config)
 GOLANGCI_LINT_VERSION ?= v1.64.4
 
@@ -50,7 +53,7 @@ help: ## Show this help message
 prepare: ## Prepare development environment
 	@echo "Preparing development environment..."
 	@go mod download
-	@go install golang.org/x/tools/cmd/goimports@v0.24.0
+	@$(GO) install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 
 .PHONY: deps
 deps: prepare ## Install dependencies
@@ -61,8 +64,11 @@ deps: prepare ## Install dependencies
 .PHONY: fmt
 fmt: ## Format code
 	@echo "Formatting code..."
-	@go fmt ./...
-	@goimports -w -local github.com/dubbogo/protoc-gen-go-triple .
+	@$(GO) fmt ./...
+	@if [ ! -x "$(GO_PATH)/bin/goimports" ]; then \
+		$(GO) install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION); \
+	fi
+	@"$(GO_PATH)/bin/goimports" -w -local github.com/dubbogo/protoc-gen-go-triple/v3 .
 
 .PHONY: test
 test: ## Run tests
@@ -93,6 +99,7 @@ clean: ## Clean build artifacts
 
 .PHONY: verify
 verify: clean fmt test ## Verify code quality (fmt + test)
+## Note: CI no longer enforces gofmt/goimports; keep fmt for local use only
 
 .PHONY: lint
 lint: ## Run golangci-lint

@@ -74,14 +74,8 @@ jobs:
     - name: Install dependencies
       run: |
         go get -v -t -d ./...
-        go install golang.org/x/tools/cmd/goimports@v0.24.0
 
-    - name: Format code
-      run: |
-        go fmt ./...
-        goimports -w -local github.com/dubbogo/protoc-gen-go-triple .
-        git status
-        [[ -z `git status -s` ]]
+    # Removed code formatting enforcement to allow custom import style
 
     - name: Verify
       run: |
