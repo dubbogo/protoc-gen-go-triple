@@ -38,8 +38,8 @@ LICENSE_DIR = /tmp/tools/license
 
 SHELL = /bin/bash
 
-# GolangCI-Lint version (must be a v1.x tag)
-GOLANGCI_LINT_VERSION ?= v1.64.4
+# GolangCI-Lint version (must match action's supported major)
+GOLANGCI_LINT_VERSION ?= v2.1.6
 
 .PHONY: help
 help: ## Show this help message
