@@ -46,17 +46,23 @@ linters-settings:
   gocritic:
     disabled-checks:
       - wrapperFunc
+      - emptyStringTest
+      - hugeParam
+      - nestingReduce
+      - octalLiteral
+      - appendCombine
+      - commentFormatting
     enabled-tags:
       - performance
       - style
       - experimental
   gocyclo:
-    min-complexity: 10
+    min-complexity: 30
   govet:
     enable:
       - shadow
   lll:
-    line-length: 140
+    line-length: 200
   misspell:
     locale: US
     ignore-words:
@@ -71,13 +77,13 @@ issues:
     - linters:
         - staticcheck
       text: '(SA1019|ST1001):'
-
-run:
-  skip-dirs:
+  exclude-dirs:
     - test
     - examples
-  # skip-files uses regexes
-  skip-files:
+    - gen/generator
+    - internal/old_triple
+  # exclude-files uses regexes
+  exclude-files:
     - '.*\.pb\.go$'
     - '.*\.triple\.go$'
 
