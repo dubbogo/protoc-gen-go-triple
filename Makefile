@@ -38,6 +38,9 @@ LICENSE_DIR = /tmp/tools/license
 
 SHELL = /bin/bash
 
+# GolangCI-Lint version (must be a v1.x tag)
+GOLANGCI_LINT_VERSION ?= v1.64.4
+
 .PHONY: help
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -95,18 +98,16 @@ verify: clean fmt test ## Verify code quality (fmt + test)
 .PHONY: lint
 lint: ## Run golangci-lint
 	@echo "Running golangci-lint..."
-	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run ./...; \
-	else \
-		echo "golangci-lint not found. Installing..."; \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.1.6; \
-		golangci-lint run ./...; \
+	@if ! command -v golangci-lint >/dev/null 2>&1; then \
+		$(MAKE) lint-install; \
 	fi
+	@golangci-lint run ./...
 
 .PHONY: lint-install
 lint-install: ## Install golangci-lint
 	@echo "Installing golangci-lint..."
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v2.1.6
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
+	  sh -s -- -b $$(go env GOPATH)/bin $(GOLANGCI_LINT_VERSION)
 
 .PHONY: all
 all: clean prepare deps fmt lint test build ## Run all checks and build

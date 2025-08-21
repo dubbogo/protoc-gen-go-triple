@@ -21,8 +21,6 @@ linters:
     - ineffassign
     - misspell
     - staticcheck
-    - gofmt
-    - goimports
     - gosimple
     - unused
     - errcheck
@@ -83,6 +81,7 @@ linters:
 
 formatters:
   settings:
+    # Keep formatter settings; the action installs and runs formatter separately
     goimports:
       local-prefixes:
         - github.com/dubbogo/protoc-gen-go-triple
