@@ -21,9 +21,7 @@ import (
 	"html/template"
 	"log"
 	"strings"
-)
 
-import (
 	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
 )
 

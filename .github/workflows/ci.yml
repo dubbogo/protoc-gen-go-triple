@@ -74,11 +74,14 @@ jobs:
     - name: Install dependencies
       run: |
         go get -v -t -d ./...
-        go install github.com/dubbogo/tools/cmd/imports-formatter@latest
+        go install golang.org/x/tools/cmd/goimports@v0.24.0
 
     - name: Format code
       run: |
-        go fmt ./... && GOROOT=$(go env GOROOT) imports-formatter && git status && [[ -z `git status -s` ]]
+        go fmt ./...
+        goimports -w -local github.com/dubbogo/protoc-gen-go-triple .
+        git status
+        [[ -z `git status -s` ]]
 
     - name: Verify
       run: |

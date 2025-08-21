@@ -22,15 +22,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-)
 
-import (
-	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
-)
-
-import (
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/descriptorpb"
+
+	"github.com/dubbogo/protoc-gen-go-triple/v3/util"
 )
 
 // buildPackageLookupMap creates a map for efficient package name to file lookup

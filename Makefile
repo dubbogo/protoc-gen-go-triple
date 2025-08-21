@@ -52,7 +52,7 @@ help: ## Show this help message
 prepare: ## Prepare development environment
 	@echo "Preparing development environment..."
 	@go mod download
-	@go install github.com/dubbogo/tools/cmd/imports-formatter@latest
+	@go install golang.org/x/tools/cmd/goimports@v0.24.0
 
 .PHONY: deps
 deps: prepare ## Install dependencies
@@ -63,7 +63,7 @@ deps: prepare ## Install dependencies
 fmt: ## Format code
 	@echo "Formatting code..."
 	@go fmt ./...
-	@GOROOT=$(go env GOROOT) imports-formatter
+	@goimports -w -local github.com/dubbogo/protoc-gen-go-triple .
 
 .PHONY: test
 test: ## Run tests
