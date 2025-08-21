@@ -1,0 +1,97 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: "2"
+linters:
+  default: none
+  enable:
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - gosimple
+    - unused
+    - errcheck
+    - goconst
+    - gocyclo
+    - gocritic
+    - lll
+    - dupl
+    - depguard
+
+linters-settings:
+  depguard:
+    rules:
+      main:
+        deny:
+          - pkg: github.com/sirupsen/logrus
+            desc: logging is allowed only by logutils.Log, logrus is allowed to use only in logutils package
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  gocritic:
+    disabled-checks:
+      - wrapperFunc
+      - emptyStringTest
+      - hugeParam
+      - nestingReduce
+      - octalLiteral
+      - appendCombine
+      - commentFormatting
+    enabled-tags:
+      - performance
+      - style
+      - experimental
+  gocyclo:
+    min-complexity: 30
+  govet:
+    enable:
+      - shadow
+  lll:
+    line-length: 200
+  misspell:
+    locale: US
+    ignore-words:
+      - nto
+issues:
+  # Skip issues in generated files; set to false if you want to lint them.
+  exclude-generated: true
+  exclude-rules:
+    - linters:
+        - gosec
+      text: weak cryptographic primitive
+    - linters:
+        - staticcheck
+      text: '(SA1019|ST1001):'
+  # exclude-files uses regexes
+  exclude-files:
+    - '.*\.pb\.go$'
+    - '.*\.triple\.go$'
+
+run:
+  skip-dirs:
+    - test
+    - examples
+    - gen/generator
+    - internal/old_triple
+
+formatters:
+  settings:
+    # Keep formatter settings; the action installs and runs formatter separately
+    goimports:
+      local-prefixes:
+        - github.com/dubbogo/protoc-gen-go-triple

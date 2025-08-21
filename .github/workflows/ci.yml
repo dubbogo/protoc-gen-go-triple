@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'release-*'
+      - 'feature-*'
+  pull_request:
+    branches: "*"
+
+permissions:
+  contents: read
+
+jobs:
+  license:
+    name: Check License Header
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check License Header
+        uses: apache/skywalking-eyes/header@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config: .licenserc.yaml
+          mode: check
+
+  build:
+    name: ${{ matrix.os }} - Go ${{ matrix.go_version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        go_version:
+          - '1.20'
+          - '1.21'
+          - '1.22'
+        os:
+          - ubuntu-latest
+
+    steps:
+
+    - name: Setup Go ${{ matrix.go_version }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.go_version }}
+      id: go
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Merge code into the upstream
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        git fetch origin $GITHUB_BASE_REF
+        git checkout -b $GITHUB_BASE_REF origin/$GITHUB_BASE_REF
+        git remote add devrepo https://github.com/${{github.event.pull_request.head.repo.full_name}}.git
+        git fetch devrepo ${{github.event.pull_request.head.sha}}
+        git config --global user.email "protoc-gen-go-triple@github-ci.com"
+        git config --global user.name "robot"
+        git merge ${{github.event.pull_request.head.sha}}
+
+    - name: Install dependencies
+      run: |
+        go get -v -t -d ./...
+
+    # Removed code formatting enforcement to allow custom import style
+
+    - name: Verify
+      run: |
+        go mod tidy
+        make verify
+
+    - name: Build
+      run: |
+        go build -v ./...
+
+    - name: Test
+      run: |
+        go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.txt
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false

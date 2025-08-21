@@ -1,0 +1,34 @@
+name: golangci-lint
+on:
+  push:
+    branches: "*"
+  pull_request:
+    branches: "*"
+
+permissions:
+  contents: read
+
+jobs:
+  golangci:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      pull-requests: read # for golangci/golangci-lint-action to fetch pull requests
+    name: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        golang:
+          - "1.20"
+          - "1.21"
+          - "1.22"
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.golang }}
+      - uses: actions/checkout@v4
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v5
+        with:
+          # Use golangci-lint v1.x to match config schema
+          version: v1.64.4
+          args: --timeout=10m
