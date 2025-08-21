@@ -32,11 +32,9 @@ GO_TEST = $(GO) test
 GO_BUILD_FLAGS = -v
 GO_BUILD_LDFLAGS = -X main.version=$(VERSION)
 
-GO_LICENSE_CHECKER_DIR = license-header-checker-$(GO_OS)
-GO_LICENSE_CHECKER = $(GO_PATH)/bin/license-header-checker
-LICENSE_DIR = /tmp/tools/license
-
 SHELL = /bin/bash
+# Uncomment to enable strict mode for all recipes (verify CI tolerance first)
+# .SHELLFLAGS := -eu -o pipefail -c
 
 # GolangCI-Lint version to install locally (v1.x to match config)
 GOLANGCI_LINT_VERSION ?= v1.64.4
@@ -57,7 +55,8 @@ prepare: ## Prepare development environment
 .PHONY: deps
 deps: prepare ## Install dependencies
 	@echo "Installing dependencies..."
-	@go get -v -t -d ./...
+	@go mod tidy -v
+	@go mod download
 
 .PHONY: fmt
 fmt: ## Format code
@@ -68,22 +67,22 @@ fmt: ## Format code
 .PHONY: test
 test: ## Run tests
 	@echo "Running tests..."
-	@go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+	@$(GO_TEST) -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 
 .PHONY: test-short
 test-short: ## Run tests without race detection
 	@echo "Running tests (short mode)..."
-	@go test -v -coverprofile=coverage.txt -covermode=atomic ./...
+	@$(GO_TEST) -v ./...
 
 .PHONY: build
 build: ## Build the project
 	@echo "Building project..."
-	@go build -v $(GO_BUILD_FLAGS) -ldflags="$(GO_BUILD_LDFLAGS)" ./...
+	@$(GO) build $(GO_BUILD_FLAGS) -ldflags="$(GO_BUILD_LDFLAGS)" ./...
 
 .PHONY: install
 install: ## Install the protoc plugin
 	@echo "Installing protoc-gen-go-triple..."
-	@go install -v -ldflags="$(GO_BUILD_LDFLAGS)" ./...
+	@$(GO) install -v -ldflags="$(GO_BUILD_LDFLAGS)" ./...
 
 .PHONY: clean
 clean: ## Clean build artifacts
@@ -106,6 +105,16 @@ lint: ## Run golangci-lint
 .PHONY: lint-install
 lint-install: ## Install golangci-lint
 	@echo "Installing golangci-lint..."
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
+	  sh -s -- -b $$(go env GOPATH)/bin $(GOLANGCI_LINT_VERSION)
+
+.PHONY: lint-version
+lint-version: ## Show installed golangci-lint version
+	@which golangci-lint >/dev/null 2>&1 && golangci-lint --version | head -n1 || echo "golangci-lint not installed"
+
+.PHONY: lint-upgrade
+lint-upgrade: ## Force install requested golangci-lint version
+	@echo "Upgrading golangci-lint to $(GOLANGCI_LINT_VERSION)..."
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
 	  sh -s -- -b $$(go env GOPATH)/bin $(GOLANGCI_LINT_VERSION)
 
