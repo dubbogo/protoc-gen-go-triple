@@ -77,15 +77,17 @@ issues:
     - linters:
         - staticcheck
       text: '(SA1019|ST1001):'
-  exclude-dirs:
-    - test
-    - examples
-    - gen/generator
-    - internal/old_triple
   # exclude-files uses regexes
   exclude-files:
     - '.*\.pb\.go$'
     - '.*\.triple\.go$'
+
+run:
+  skip-dirs:
+    - test
+    - examples
+    - gen/generator
+    - internal/old_triple
 
 formatters:
   settings:
