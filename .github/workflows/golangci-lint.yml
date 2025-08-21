@@ -29,5 +29,6 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.1.6
+          # Pin golangci-lint binary version (expects v1.x). Update as needed.
+          version: v1.64.4
           args: --timeout=10m
