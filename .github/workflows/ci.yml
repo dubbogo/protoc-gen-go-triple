@@ -46,20 +46,13 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go_version }}
+        cache: true
       id: go
 
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Cache dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.cache/go-build
-          ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+    # Built-in caching in setup-go covers module and build caches
 
     - name: Merge code into the upstream
       if: ${{ github.event_name == 'pull_request' }}
@@ -74,7 +67,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        go get -v -t -d ./...
+        go mod download
 
     # Removed code formatting enforcement to allow custom import style
 
