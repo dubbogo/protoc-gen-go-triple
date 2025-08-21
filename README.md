@@ -25,7 +25,7 @@ To install `protoc-gen-go-triple`, you can use the `go get` command:
 go install github.com/dubbogo/protoc-gen-go-triple/v3@v3.0.3
 ```
 
-Alternatively, you can download the [binary release](https://github.com/dubbogo/protoc-gen-go-triple/releases/tag/v3.0.2) or clone the GitHub repository and build the binary manually:
+Alternatively, you can download the [binary release](https://github.com/dubbogo/protoc-gen-go-triple/releases/tag/v3.0.3) or clone the GitHub repository and build the binary manually:
 
 ```shell
 git clone https://github.com/dubbogo/protoc-gen-go-triple.git
