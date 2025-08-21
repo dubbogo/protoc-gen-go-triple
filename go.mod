@@ -1,6 +1,6 @@
 module github.com/dubbogo/protoc-gen-go-triple/v3
 
-go 1.23
+go 1.20
 
 require google.golang.org/protobuf v1.34.2
 
