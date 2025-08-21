@@ -80,7 +80,7 @@ jobs:
 
     - name: Verify
       run: |
-        go mod tidy
+        if [[ "${{ matrix.go_version }}" == "1.23" ]]; then go mod tidy; fi
         make verify
 
     - name: Build
