@@ -1,6 +1,6 @@
+This repository has been deprecated, move to [protoc-gen-go-triple](https://github.com/apache/dubbo-go/tree/main/tools/protoc-gen-go-triple)
 
-
-# protoc-gen-go-triple
+# [Deprecated] protoc-gen-go-triple
 
 The `protoc-gen-go-triple` tool generates Go language bindings for Dubbo `service`s based on protobuf definition files.
 
