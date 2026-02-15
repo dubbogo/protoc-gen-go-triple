@@ -27,7 +27,7 @@ jobs:
           go-version: ${{ matrix.golang }}
       - uses: actions/checkout@v4
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v5
+        uses: golangci/golangci-lint-action@v8
         with:
           # Use golangci-lint v1.x to match config schema
           version: v1.64.4
