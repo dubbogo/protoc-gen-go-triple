@@ -17,7 +17,7 @@ jobs:
     name: Check License Header
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check License Header
         uses: apache/skywalking-eyes/header@main
@@ -48,7 +48,7 @@ jobs:
       id: go
 
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Cache dependencies
       uses: actions/cache@v4
